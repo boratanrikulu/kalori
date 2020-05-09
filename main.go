@@ -13,6 +13,7 @@ func main() {
 	r := mux.NewRouter()
 
 	r.HandleFunc("/", controllers.WelcomeGet).Methods("GET")
+	r.HandleFunc("/", controllers.RecognizeGet).Methods("GET")
 	r.PathPrefix("/assets").Handler(http.StripPrefix("/assets/",
 		http.FileServer(http.Dir("./assets/"))))
 
