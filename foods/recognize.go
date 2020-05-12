@@ -62,7 +62,7 @@ func Recognize(image *bytes.Buffer, imageFormat string) (string, float32) {
 // TODO loadModel...
 func loadModel() error {
 	// Load inception model
-	model, err := ioutil.ReadFile("./model/tensorflow_inception_graph.pb")
+	model, err := ioutil.ReadFile("./foods/model/tensorflow_inception_graph.pb")
 	if err != nil {
 		return err
 	}
@@ -77,7 +77,7 @@ func loadModel() error {
 	}
 
 	// Load labels
-	labelsFile, err := os.Open("./model/imagenet_comp_graph_label_strings.txt")
+	labelsFile, err := os.Open("./foods/model/imagenet_comp_graph_label_strings.txt")
 	if err != nil {
 		return err
 	}
