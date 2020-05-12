@@ -1,0 +1,29 @@
+{{ define "content" }}
+
+<section class="hero is-info">
+	<div class="hero-body">
+		<figure class="image hero-image is-pulled-right">
+			<img src="data:image/jpg;base64,{{.Food.Picture}}">
+		</figure>
+
+		<h1 class="title">
+			That is a <strong>{{ .Food.Name }}</strong>!
+		</h1>
+		<p class="hero-info">
+			We guess your food is <strong>{{ .Food.Name }}</strong>.
+		</p>
+		<p class="hero-info">
+			The calorie of the {{ .Food.Name }} is <strong>{{ .Food.Calorie }}</strong> (100 g portion).
+		</p>
+
+	</div>
+	<div class="hero-button">
+		<a href="/" class="button is-light">
+			<strong>Go back</strong>
+		</a>
+	</div>
+</section>
+
+
+{{ end }}
+{{ template "default" . }}
