@@ -11,12 +11,8 @@ import (
 	"github.com/boratanrikulu/kalori/foods"
 )
 
-const (
-	MB = 1 << 20
-)
-
 func RecognizePost(w http.ResponseWriter, r *http.Request) {
-	r.ParseMultipartForm(10 * MB)
+	r.ParseMultipartForm(1 << 20) // 10 MB size limit
 	file, _, err := r.FormFile("file")
 	if err != nil {
 		log.Println(err)
@@ -33,10 +29,10 @@ func RecognizePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, probability := foods.Recognize(&b, "png")
-	output := fmt.Sprint(result, " - ", probability)
-	if probability <= 0.5 {
-		output = "Could not found."
+	result, calorie, err := foods.Recognize(&b)
+	output := fmt.Sprintf("%v %v", result, calorie)
+	if err != nil {
+		output = "Could not predict the uploaded image."
 	}
 
 	fmt.Fprintln(w, output)

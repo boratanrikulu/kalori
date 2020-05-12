@@ -1,114 +1,62 @@
 package foods
 
 import (
-	"bufio"
 	"bytes"
-	"io/ioutil"
-	"log"
+	"context"
+	"fmt"
 	"os"
-	"sort"
 
-	tf "github.com/tensorflow/tensorflow/tensorflow/go"
+	automl "cloud.google.com/go/automl/apiv1"
+	automlpb "google.golang.org/genproto/googleapis/cloud/automl/v1"
 )
 
-var (
-	graphModel   *tf.Graph
-	sessionModel *tf.Session
-	labels       []string
-)
+// Recognize does a prediction and calorie calc for the image classification.
+func Recognize(image *bytes.Buffer) (string, string, error) {
+	projectID := os.Getenv("GCLOUD_PROJECT_ID")
+	location := os.Getenv("GCLOUD_LOCATION")
+	modelID := os.Getenv("GCLOUD_MODEL_ID")
 
-func init() {
-	if err := loadModel(); err != nil {
-		log.Fatal(err)
-		return
-	}
-}
-
-type LabelResult struct {
-	Label       string  `json:"label"`
-	Probability float32 `json:"probability"`
-}
-
-// TODO Recognize...
-func Recognize(image *bytes.Buffer, imageFormat string) (string, float32) {
-	tensor, err := makeTensorFromImage(image, imageFormat)
+	ctx := context.Background()
+	client, err := automl.NewPredictionClient(ctx)
 	if err != nil {
-		log.Println(err)
-		return "", 0
+		return "", "", fmt.Errorf("NewPredictionClient: %v", err)
 	}
+	defer client.Close()
 
-	// Run inference
-	output, err := sessionModel.Run(
-		map[tf.Output]*tf.Tensor{
-			graphModel.Operation("input").Output(0): tensor,
+	req := &automlpb.PredictRequest{
+		Name: fmt.Sprintf("projects/%s/locations/%s/models/%s", projectID, location, modelID),
+		Payload: &automlpb.ExamplePayload{
+			Payload: &automlpb.ExamplePayload_Image{
+				Image: &automlpb.Image{
+					Data: &automlpb.Image_ImageBytes{
+						ImageBytes: image.Bytes(),
+					},
+				},
+			},
 		},
-		[]tf.Output{
-			graphModel.Operation("output").Output(0),
+		// Params is additional domain-specific parameters.
+		Params: map[string]string{
+			// score_threshold is used to filter the result.
+			"score_threshold": "0.6",
 		},
-		nil)
+	}
+
+	resp, err := client.Predict(ctx, req)
 	if err != nil {
-		log.Println(err)
-		return "", 0
+		return "", "", fmt.Errorf("Predict: %v", err)
 	}
 
-	if len(output) == 0 {
-		return "", 0
+	payloads := resp.GetPayload()
+
+	if len(payloads) == 0 {
+		return "", "", fmt.Errorf("There is no predicted class name")
 	}
 
-	result := findBestLabel(output[0].Value().([][]float32)[0])
-	return result.Label, result.Probability
+	foodName := payloads[0].GetDisplayName()
+	foodCalorie, err := Calorie(foodName)
+	if err != nil {
+		return "", "", fmt.Errorf("We can not find the calorie for the image")
+	}
+
+	return foodName, foodCalorie, nil
 }
-
-// TODO loadModel...
-func loadModel() error {
-	// Load inception model
-	model, err := ioutil.ReadFile("./foods/model/tensorflow_inception_graph.pb")
-	if err != nil {
-		return err
-	}
-	graphModel = tf.NewGraph()
-	if err := graphModel.Import(model, ""); err != nil {
-		return err
-	}
-
-	sessionModel, err = tf.NewSession(graphModel, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Load labels
-	labelsFile, err := os.Open("./foods/model/imagenet_comp_graph_label_strings.txt")
-	if err != nil {
-		return err
-	}
-	defer labelsFile.Close()
-	scanner := bufio.NewScanner(labelsFile)
-	// Labels are separated by newlines
-	for scanner.Scan() {
-		labels = append(labels, scanner.Text())
-	}
-	if err := scanner.Err(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func findBestLabel(probabilities []float32) LabelResult {
-	var result []LabelResult
-	for i, p := range probabilities {
-		if i >= len(labels) {
-			break
-		}
-		result = append(result, LabelResult{Label: labels[i], Probability: p})
-	}
-
-	sort.Sort(byProbability(result))
-
-	return result[0]
-}
-
-type byProbability []LabelResult
-
-func (a byProbability) Len() int           { return len(a) }
-func (a byProbability) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a byProbability) Less(i, j int) bool { return a[i].Probability > a[j].Probability }

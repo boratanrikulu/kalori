@@ -6,23 +6,33 @@ import (
 	"io/ioutil"
 	"log"
 	"testing"
+
+	"github.com/joho/godotenv"
 )
 
-func TestloadModel(t *testing.T) {
-	err := loadModel()
-	if err != nil {
-		t.Error("Could not load the model.")
-	}
+func init() {
+	godotenv.Load("../.env")
 }
 
 func TestRecognize(t *testing.T) {
-	b := getTestingPlainImage()
-	result, probability := Recognize(bytes.NewBuffer(b), "jpg")
-	fmt.Printf("It might be an %v (%v)\n", result, probability)
+	testImages := []string{
+		"test_images/hamburger.jpg",
+		"test_images/pizza.jpg",
+		"test_images/lentil_soup.jpg",
+	}
+
+	for _, value := range testImages {
+		b := getTestingPlainImage(value)
+		result, calorie, err := Recognize(bytes.NewBuffer(b))
+		if err != nil {
+			t.Fatal(err)
+		}
+		fmt.Println(result, calorie)
+	}
 }
 
-func getTestingPlainImage() []byte {
-	b, err := ioutil.ReadFile("lentil_soup.jpg")
+func getTestingPlainImage(path string) []byte {
+	b, err := ioutil.ReadFile(path)
 	if err != nil {
 		log.Fatalf("Error occur while reading test image: %v", err)
 	}
