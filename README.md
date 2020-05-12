@@ -15,3 +15,7 @@ An app that lets you see what the calories of your food.
 
 - Go
 - Google Vision AutoML
+
+## Usage
+
+![example](example.gif)
