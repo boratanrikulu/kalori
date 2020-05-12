@@ -1,0 +1,19 @@
+{{ define "content" }}
+
+<article class="message is-danger">
+	<div class="message-header">
+		<p>Hey!</p>
+	</div>
+	<div class="message-body">
+		<p>{{ .Error }}</p>
+	</div>
+</article>
+
+<div class="buttons">
+	<a href="/" class="button is-info">
+		<strong>Go back</strong>
+	</a>
+</div>
+
+{{ end }}
+{{ template "default" . }}
