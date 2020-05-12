@@ -1,6 +1,7 @@
 package foods
 
 import (
+	"os"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -41,6 +42,7 @@ func Calorie(foodName string) (string, error) {
 	q, _ := url.ParseQuery(u.RawQuery)
 
 	q.Add("query", foodName)
+	q.Add("api_key", os.Getenv("USDA_API_KEY"))
 	q.Add("dataType", "Branded")
 	q.Add("sortBy", "fdcId")
 	q.Add("sortOrder", "desc")
