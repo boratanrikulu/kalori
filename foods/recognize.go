@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	automl "cloud.google.com/go/automl/apiv1"
 	automlpb "google.golang.org/genproto/googleapis/cloud/automl/v1"
@@ -53,8 +54,20 @@ func Recognize(image *bytes.Buffer) (string, string, error) {
 	}
 
 	foodName := payloads[0].GetDisplayName()
-	foodCalorie, err := Calorie(foodName)
-	if err != nil {
+	foodName = strings.ReplaceAll(foodName, "_", " ")
+	foodName = strings.Title(strings.ToLower(foodName))
+	foodCalorie, _ := Calorie(foodName)
+
+	// TODO fix this messy code lines.
+	// Implement a json to keep kcals.
+	if foodName == "Sarma" {
+		foodCalorie = "106 kcal"
+	}
+	if foodName == "Cigkofte" {
+		foodCalorie = "181 kcal"
+	}
+
+	if foodCalorie == "" {
 		return "", "", fmt.Errorf("We can not find the calorie for the image")
 	}
 
